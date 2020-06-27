@@ -4,6 +4,8 @@ Azure virtual machine scale sets let you create and manage a group of identical,
 
 This module deploys Windows or Linux virtual machine scale sets with Public / Private Load Balancer support and many other features.
 
+This module also generates SSH2 Key pair for Linux servers by default, however, it is only recommended to use for dev environment. For production environments, please generate your own SSH2 key with a passphrase and input the key by providing the path to the argument `admin_ssh_key_data`.
+
 These types of resources supported:
 
 * [Linux Virtual Machine Scale Set](https://www.terraform.io/docs/providers/azurerm/r/linux_virtual_machine_scale_set.html)
