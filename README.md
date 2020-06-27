@@ -121,10 +121,11 @@ module "virtual-machine" {
 
   # .... omitted
 
-  os_flavor                  = "linux"
-  instances_count            = 2
-  enable_vm_availability_set = true
-  enable_public_ip_address   = true
+  os_flavor               = "linux"
+  linux_distribution_name = "windows2019dc"
+  generate_admin_ssh_key  = false
+  admin_ssh_key_data      = "~/.ssh/id_rsa.pub"
+  instances_count         = 2
 
   custom_image = {
       publisher = "myPublisher"
@@ -232,13 +233,11 @@ module "vnet-hub" {
 
   # .... omitted
   
-  os_flavor                  = "linux"
-  linux_distribution_name    = "ubuntu1804"
-  generate_admin_ssh_key     = false
-  admin_ssh_key_data         = "./id_rsa.pub"
-  instances_count            = 2
-  enable_vm_availability_set = true
-  enable_public_ip_address   = true
+  os_flavor               = "linux"
+  linux_distribution_name = "windows2019dc"
+  generate_admin_ssh_key  = false
+  admin_ssh_key_data      = "~/.ssh/id_rsa.pub"
+  instances_count         = 2
 
   nsg_inbound_rules = [
     {
