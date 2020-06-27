@@ -194,6 +194,28 @@ This module also supports attaching data disks by setting up the argument `addit
 
 > Note: When you create a scale set with attached data disks, you need to mount and format the disks from within a VM to use them (just like for standalone Azure VMs). A convenient way to complete this process is to use a Custom Script Extension that calls a script to partition and format all the data disks on a VM.
 
+### `single_placement_group` - large scale sets
+
+By default, a scale set consists of a single placement group with a maximum size of 100 VMs. If a scale set property called singlePlacementGroup is set to false, the scale set can be composed of multiple placement groups and has a range of 0-1,000 VMs.
+
+By default this is enabled and set to `true`. To change this value to allow multiple placement groups set the argument `single_placement_group = false`
+
+### assign_public_ip_to_each_vm_in_vmss - Public IP per Virtual Machine
+
+In general, Azure scale set virtual machines do not require their own public IP addresses. For most scenarios, it is more economical and secure to associate a public IP address to a load balancer or to a Bastion server, which then routes incoming connections to scale set virtual machines as needed.
+
+However, some scenarios do require scale set virtual machines to have their own public IP addresses. An example is where virtual machines need to make external connections to one another across regions in a distributed database.
+
+To create a scale set that assigns a public IP address to each virtual machine, set the argument `assign_public_ip_to_each_vm_in_vmss = true`
+
+### enable_automatic_instance_repair - Automatically repair unhealthy Instances
+
+Enabling automatic instance repairs for Azure virtual machine scale sets helps achieve high availability for applications by maintaining a set of healthy instances. If an instance in the scale set is found to be unhealthy as reported by Application Health extension or Load balancer health probes, then this feature automatically performs instance repair by deleting the unhealthy instance and creating a new one to replace it.
+
+When an instance goes through a state change operation because of a PUT, PATCH or POST action performed on the scale set (for example reimage, redeploy, update, etc.), then any repair action on that instance is performed only after waiting for the grace period. Grace period is the amount of time to allow the instance to return to healthy state. The grace period starts after the state change has completed. This helps avoid any premature or accidental repair operations. Grace period is specified in minutes in ISO 8601 format. Grace period can range between 30 minutes and 90 minutes, and has a default value of 30 minutes.
+
+The automatic instance repair feature can be enabled while creating a new scale set by setting up the argument `enable_automatic_instance_repair = true` and the grace period can be managed using the argument `grace_period = "PT30M"`. Default grace period is 30 minutes.
+
 ## Network Security Groups
 
 By default, the network security groups connected to Network Interface and allow necessary traffic and block everything else (deny-all rule). Use `nsg_inbound_rules` in this Terraform module to create a Network Security Group (NSG) for network interface and allow it to add additional rules for inbound flows.
@@ -219,13 +241,13 @@ module "vnet-hub" {
   nsg_inbound_rules = [
     {
       name                   = "ssh"
-      destination_port_range = "443"
+      destination_port_range = "80"
       source_address_prefix  = "*"
     },
 
     {
       name                   = "http"
-      destination_port_range = "80"
+      destination_port_range = "443"
       source_address_prefix  = "*"
     },
   ]
@@ -297,7 +319,7 @@ Name | Description | Type | Default
 `hub_storage_account_name`|The name of the hub storage account to store logs|string | `""`
 `load_balancer_sku`|The SKU of the Azure Load Balancer. Accepted values are `Basic` and `Standard`|string | `"Standard"`
 `load_balancer_type`|Controls the type of load balancer should be created. Possible values are `public` and `private`|string | `"private"`
-`enable_lb_nat_pool`|If enabled load balancer NAT pool will be created for SSH if flavor is Linux and for RDP if flavor is windows|string|`false`
+`enable_lb_nat_pool`|If enabled load balancer NAT pool will be created for SSH if flavor is Linux and for RDP if flavor is windows|string|`true`
 `nat_pool_frontend_ports`|Optional override for default NAT ports|list(number)|`[50000, 50119]`
 `os_flavor`|Specify the flavor of the operating system image to deploy Virtual Machine. Possible values are `windows` and `linux`|string |`"windows"`
 `virtual_machine_size`|The Virtual Machine SKU for the Virtual Machine|string|`"Standard_A2_v2"`

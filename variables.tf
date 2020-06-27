@@ -60,7 +60,7 @@ variable "load_balancer_type" {
 
 variable "enable_lb_nat_pool" {
   description = "If enabled load balancer nat pool will be created for SSH if flavor is linux and for winrm if flavour is windows"
-  default     = false
+  default     = true
 }
 
 variable "nat_pool_frontend_ports" {
