@@ -186,7 +186,7 @@ Azure managed disks are block-level storage volumes that are managed by Azure an
 
 By default, this module uses the standard SSD with Locally redundant storage (`StandardSSD_LRS`). To use other type of disks, set the argument `os_disk_storage_account_type` with valid values. Possible values are `Standard_LRS`, `StandardSSD_LRS` and `Premium_LRS`.
 
-### additional_data_disks_storage_account_type - Attach Data disk support to VM Instances
+### `additional_data_disks_storage_account_type` - Attach Data disk support to VM Instances
 
 Azure virtual machine scale sets support VM instances with attached data disks. You can attach data disks when the scale set is created, or to an existing scale set.
 
