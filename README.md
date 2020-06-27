@@ -200,7 +200,7 @@ By default, a scale set consists of a single placement group with a maximum size
 
 By default this is enabled and set to `true`. To change this value to allow multiple placement groups set the argument `single_placement_group = false`
 
-### assign_public_ip_to_each_vm_in_vmss - Public IP per Virtual Machine
+### `assign_public_ip_to_each_vm_in_vmss` - Public IP per Virtual Machine
 
 In general, Azure scale set virtual machines do not require their own public IP addresses. For most scenarios, it is more economical and secure to associate a public IP address to a load balancer or to a Bastion server, which then routes incoming connections to scale set virtual machines as needed.
 
@@ -208,11 +208,11 @@ However, some scenarios do require scale set virtual machines to have their own 
 
 To create a scale set that assigns a public IP address to each virtual machine, set the argument `assign_public_ip_to_each_vm_in_vmss = true`
 
-### enable_automatic_instance_repair - Automatically repair unhealthy Instances
+### `enable_automatic_instance_repair` - Automatically repair unhealthy Instances
 
 Enabling automatic instance repairs for Azure virtual machine scale sets helps achieve high availability for applications by maintaining a set of healthy instances. If an instance in the scale set is found to be unhealthy as reported by Application Health extension or Load balancer health probes, then this feature automatically performs instance repair by deleting the unhealthy instance and creating a new one to replace it.
 
-When an instance goes through a state change operation because of a PUT, PATCH or POST action performed on the scale set (for example reimage, redeploy, update, etc.), then any repair action on that instance is performed only after waiting for the grace period. Grace period is the amount of time to allow the instance to return to healthy state. The grace period starts after the state change has completed. This helps avoid any premature or accidental repair operations. Grace period is specified in minutes in ISO 8601 format. Grace period can range between 30 minutes and 90 minutes, and has a default value of 30 minutes.
+When an instance goes through a state change operation because of a PUT, PATCH or POST action performed on the scale set (for example reimage, redeploy, update, etc.), then any repair action on that instance is performed only after waiting for the grace period. Grace period is the amount of time to allow the instance to return to healthy state. Grace period is specified in minutes in ISO 8601 format and has a default value of 30 minutes.
 
 The automatic instance repair feature can be enabled while creating a new scale set by setting up the argument `enable_automatic_instance_repair = true` and the grace period can be managed using the argument `grace_period = "PT30M"`. Default grace period is 30 minutes.
 
