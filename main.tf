@@ -520,6 +520,7 @@ resource "azurerm_monitor_diagnostic_setting" "lb-pip" {
 
 ## Testing for loadblancer
 resource "azurerm_virtual_machine_scale_set_extension" "vmss_iis" {
+  count                        = var.intall_iis_server_on_instances && var.os_flavor == "windows" ? 1 : 0
   name                         = "install-iis"
   publisher                    = "Microsoft.Compute"
   type                         = "CustomScriptExtension"
@@ -532,4 +533,3 @@ resource "azurerm_virtual_machine_scale_set_extension" "vmss_iis" {
     }
   SETTINGS
 }
-

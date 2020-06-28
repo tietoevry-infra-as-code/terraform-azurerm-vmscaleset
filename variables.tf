@@ -352,6 +352,11 @@ variable "pip_diag_logs" {
   default     = ["DDoSProtectionNotifications", "DDoSMitigationFlowLogs", "DDoSMitigationReports"]
 }
 
+variable "intall_iis_server_on_instances" {
+  description = "Install ISS server on every Instance in the VM scale set"
+  default     = false
+}
+
 variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)
