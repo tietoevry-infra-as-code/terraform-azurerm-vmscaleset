@@ -32,21 +32,21 @@ module "vmscaleset" {
   # Windows Images: windows2012r2dc, windows2016dc, windows2019dc, windows2016dccore
   # Specify the RSA key for production workloads and set generate_admin_ssh_key argument to false
   # When you use Autoscaling feature, instances_count will become default and minimum instance count.
-  os_flavor               = "linux"
-  linux_distribution_name = "windows2019dc"
-  generate_admin_ssh_key  = false
-  admin_ssh_key_data      = "~/.ssh/id_rsa.pub"
-  instances_count         = 2
+  os_flavor                 = "windows"
+  windows_distribution_name = "windows2019dc"
+  generate_admin_ssh_key    = false
+  admin_ssh_key_data        = "~/.ssh/id_rsa.pub"
+  instances_count           = 2
 
   # Public and private load balancer support for VM scale sets
   # Specify health probe port to allow LB to detect the backend endpoint status
   # Standard Load Balancer helps load-balance TCP and UDP flows on all ports simultaneously
   # Specify the list of ports based on your requirement for Load balanced ports
   # for additional data disks, provide the list for required size for the disk.
-  load_balancer_type              = "private"
+  load_balancer_type              = "public"
   load_balancer_health_probe_port = 80
   load_balanced_port_list         = [80, 443]
-  additional_data_disks           = [100, 200]
+  additional_data_disks           = [200, 500]
 
   # Enable Auto scaling feature for VM scaleset by set argument to true.
   # Instances_count in VMSS will become default and minimum instance count.
@@ -91,7 +91,7 @@ module "vmscaleset" {
 
 To run this example you need to execute following Terraform commands
 
-``` hcl
+```hcl
 terraform init
 terraform plan
 terraform apply
@@ -107,6 +107,7 @@ Run `terraform destroy` when you don't need these resources.
 `admin_ssh_key_private`|The generated private key data in PEM format
 `windows_vm_password`|Password for the windows Virtual Machine
 `load_balancer_public_ip`|The Public IP address allocated for load balancer
+`load_balancer_private_ip`|The Private IP address allocated for load balancer
 `load_balancer_nat_pool_id`|The resource ID of the Load Balancer NAT pool
 `load_balancer_health_probe_id`|The resource ID of the Load Balancer health Probe
 `load_balancer_rules_id`|The resource ID of the Load Balancer Rule

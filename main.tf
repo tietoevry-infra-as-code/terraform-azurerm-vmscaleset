@@ -111,12 +111,12 @@ resource "azurerm_lb_nat_pool" "natpol" {
   count                          = var.enable_load_balancer && var.enable_lb_nat_pool ? 1 : 0
   name                           = lower("lbe-nat-pool-${var.project_name}-${var.environment}-${var.location}")
   resource_group_name            = data.azurerm_resource_group.rg.name
-  loadbalancer_id                = azurerm_lb.vmsslb[count.index].id
+  loadbalancer_id                = azurerm_lb.vmsslb.0.id
   protocol                       = "Tcp"
   frontend_port_start            = var.nat_pool_frontend_ports[0]
   frontend_port_end              = var.nat_pool_frontend_ports[1]
   backend_port                   = var.os_flavor == "linux" ? 22 : 3389
-  frontend_ip_configuration_name = azurerm_lb.vmsslb[0].frontend_ip_configuration.0.name
+  frontend_ip_configuration_name = azurerm_lb.vmsslb.0.frontend_ip_configuration.0.name
 }
 
 #---------------------------------------
@@ -334,7 +334,7 @@ resource "azurerm_windows_virtual_machine_scale_set" "winsrv_vmss" {
       primary                                = true
       subnet_id                              = data.azurerm_subnet.snet.id
       load_balancer_backend_address_pool_ids = var.enable_load_balancer ? [azurerm_lb_backend_address_pool.bepool[0].id] : null
-      load_balancer_inbound_nat_rules_ids    = var.enable_load_balancer && var.enable_lb_nat_pool ? [azurerm_lb_nat_pool.natpol[0].id] : null
+      load_balancer_inbound_nat_rules_ids    = var.enable_load_balancer && var.enable_lb_nat_pool ? [azurerm_lb_nat_pool.natpol.0.id] : null
 
       dynamic "public_ip_address" {
         for_each = var.assign_public_ip_to_each_vm_in_vmss ? [{}] : []
@@ -429,13 +429,13 @@ resource "azurerm_monitor_autoscale_setting" "auto" {
 # Azure Log Analytics Workspace Agent Installation 
 #--------------------------------------------------
 resource "azurerm_virtual_machine_scale_set_extension" "omsagent" {
-  count                        = var.log_analytics_workspace_name != null && var.os_flavor == "windows" || var.os_flavor == "linux" ? 1 : 0
-  name                         = var.os_flavor == "windows" ? "OmsAgentForWindows" : "OmsAgentForLinux"
+  count                        = var.log_analytics_workspace_name != null && var.os_flavor == "windows" ? 1 : 0
+  name                         = "OmsAgentForWindows"
   publisher                    = "Microsoft.EnterpriseCloud.Monitoring"
-  type                         = var.os_flavor == "windows" ? "MicrosoftMonitoringAgent" : "OmsAgentForLinux"
-  type_handler_version         = var.os_flavor == "windows" ? "1.0" : "1.13"
+  type                         = "MicrosoftMonitoringAgent"
+  type_handler_version         = "1.0"
   auto_upgrade_minor_version   = true
-  virtual_machine_scale_set_id = var.os_flavor == "windows" ? azurerm_windows_virtual_machine_scale_set.winsrv_vmss.0.id : azurerm_linux_virtual_machine_scale_set.linux_vmss.0.id
+  virtual_machine_scale_set_id = azurerm_windows_virtual_machine_scale_set.winsrv_vmss.0.id
 
   settings = <<SETTINGS
     {
@@ -444,7 +444,7 @@ resource "azurerm_virtual_machine_scale_set_extension" "omsagent" {
   SETTINGS
 
   protected_settings = <<PROTECTED_SETTINGS
-  {
+    {
     "workspaceKey": "${data.azurerm_log_analytics_workspace.logws.0.primary_shared_key}"
     }
   PROTECTED_SETTINGS
@@ -456,7 +456,7 @@ resource "azurerm_virtual_machine_scale_set_extension" "omsagent" {
 resource "azurerm_monitor_diagnostic_setting" "vmmsdiag" {
   count                      = var.log_analytics_workspace_name != null && var.hub_storage_account_name != null ? 1 : 0
   name                       = lower("${var.project_name}-${var.environment}-diag")
-  target_resource_id         = azurerm_windows_virtual_machine_scale_set.winsrv_vmss.0.id
+  target_resource_id         = var.os_flavor == "windows" ? azurerm_windows_virtual_machine_scale_set.winsrv_vmss.0.id : azurerm_linux_virtual_machine_scale_set.linux_vmss.0.id
   storage_account_id         = data.azurerm_storage_account.storeacc.0.id
   log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
 
@@ -517,7 +517,7 @@ resource "azurerm_monitor_diagnostic_setting" "lb-pip" {
   }
 }
 
-/*
+
 ## Testing for loadblancer
 resource "azurerm_virtual_machine_scale_set_extension" "vmss_iis" {
   name                         = "install-iis"
@@ -532,4 +532,4 @@ resource "azurerm_virtual_machine_scale_set_extension" "vmss_iis" {
     }
   SETTINGS
 }
-*/
+

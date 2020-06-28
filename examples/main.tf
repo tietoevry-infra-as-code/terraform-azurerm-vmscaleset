@@ -23,18 +23,18 @@ module "vmscaleset" {
   # Windows Images: windows2012r2dc, windows2016dc, windows2019dc, windows2016dccore
   # Specify the RSA key for production workloads and set generate_admin_ssh_key argument to false
   # When you use Autoscaling feature, instances_count will become default and minimum instance count. 
-  os_flavor               = "linux"
-  linux_distribution_name = "windows2019dc"
-  generate_admin_ssh_key  = false
-  admin_ssh_key_data      = "~/.ssh/id_rsa.pub"
-  instances_count         = 2
+  os_flavor                 = "windows"
+  windows_distribution_name = "windows2019dc"
+  generate_admin_ssh_key    = false
+  admin_ssh_key_data        = "~/.ssh/id_rsa.pub"
+  instances_count           = 2
 
   # Public and private load balancer support for VM scale sets
   # Specify health probe port to allow LB to detect the backend endpoint status
   # Standard Load Balancer helps load-balance TCP and UDP flows on all ports simultaneously
   # Specify the list of ports based on your requirement for Load balanced ports
   # for additional data disks, provide the list for required size for the disk. 
-  load_balancer_type              = "private"
+  load_balancer_type              = "public"
   load_balancer_health_probe_port = 80
   load_balanced_port_list         = [80, 443]
   additional_data_disks           = [100, 200]

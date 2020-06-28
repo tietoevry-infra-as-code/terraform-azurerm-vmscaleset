@@ -46,7 +46,7 @@ module "vmscaleset" {
   # Specify the RSA key for production workloads and set generate_admin_ssh_key argument to false
   # When you use Autoscaling feature, instances_count will become default and minimum instance count.
   os_flavor               = "linux"
-  linux_distribution_name = "windows2019dc"
+  linux_distribution_name = "ubuntu1804"
   generate_admin_ssh_key  = false
   admin_ssh_key_data      = "~/.ssh/id_rsa.pub"
   instances_count         = 2
@@ -56,10 +56,10 @@ module "vmscaleset" {
   # Standard Load Balancer helps load-balance TCP and UDP flows on all ports simultaneously
   # Specify the list of ports based on your requirement for Load balanced ports
   # for additional data disks, provide the list for required size for the disk.
-  load_balancer_type              = "private"
+  load_balancer_type              = "public"
   load_balancer_health_probe_port = 80
   load_balanced_port_list         = [80, 443]
-  additional_data_disks           = [100, 200]
+  additional_data_disks           = [200, 500]
 
   # Enable Auto scaling feature for VM scaleset by set argument to true.
   # Instances_count in VMSS will become default and minimum instance count.
@@ -122,7 +122,7 @@ module "virtual-machine" {
   # .... omitted
 
   os_flavor               = "linux"
-  linux_distribution_name = "windows2019dc"
+  linux_distribution_name = "ubuntu1804"
   generate_admin_ssh_key  = false
   admin_ssh_key_data      = "~/.ssh/id_rsa.pub"
   instances_count         = 2
@@ -234,7 +234,7 @@ module "vnet-hub" {
   # .... omitted
   
   os_flavor               = "linux"
-  linux_distribution_name = "windows2019dc"
+  linux_distribution_name = "ubuntu1804"
   generate_admin_ssh_key  = false
   admin_ssh_key_data      = "~/.ssh/id_rsa.pub"
   instances_count         = 2
@@ -320,7 +320,7 @@ Name | Description | Type | Default
 `hub_storage_account_name`|The name of the hub storage account to store logs|string | `""`
 `load_balancer_sku`|The SKU of the Azure Load Balancer. Accepted values are `Basic` and `Standard`|string | `"Standard"`
 `load_balancer_type`|Controls the type of load balancer should be created. Possible values are `public` and `private`|string | `"private"`
-`enable_lb_nat_pool`|If enabled load balancer NAT pool will be created for SSH if flavor is Linux and for RDP if flavor is windows|string|`true`
+`enable_lb_nat_pool`|If enabled load balancer NAT pool will be created for SSH if flavor is Linux and for RDP if flavor is windows|string|`false`
 `nat_pool_frontend_ports`|Optional override for default NAT ports|list(number)|`[50000, 50119]`
 `os_flavor`|Specify the flavor of the operating system image to deploy Virtual Machine. Possible values are `windows` and `linux`|string |`"windows"`
 `virtual_machine_size`|The Virtual Machine SKU for the Virtual Machine|string|`"Standard_A2_v2"`
@@ -367,6 +367,7 @@ Name | Description | Type | Default
 `admin_ssh_key_private`|The generated private key data in PEM format
 `windows_vm_password`|Password for the windows Virtual Machine
 `load_balancer_public_ip`|The Public IP address allocated for load balancer
+`load_balancer_private_ip`|The Private IP address allocated for load balancer
 `load_balancer_nat_pool_id`|The resource ID of the Load Balancer NAT pool
 `load_balancer_health_probe_id`|The resource ID of the Load Balancer health Probe
 `load_balancer_rules_id`|The resource ID of the Load Balancer Rule

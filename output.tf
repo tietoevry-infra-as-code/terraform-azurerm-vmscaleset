@@ -26,6 +26,11 @@ output "load_balancer_public_ip" {
   value       = var.load_balancer_type == "public" ? element(concat(azurerm_public_ip.pip.*.ip_address, [""]), 0) : null
 }
 
+output "load_balancer_private_ip" {
+  description = "The Private IP address allocated for load balancer"
+  value       = var.load_balancer_type == "private" ? element(concat(azurerm_lb.vmsslb.*.private_ip_address, [""]), 0) : null
+}
+
 output "load_balancer_nat_pool_id" {
   description = "The resource ID of the Load Balancer NAT pool."
   value       = var.enable_lb_nat_pool ? element(concat(azurerm_lb_nat_pool.natpol.*.id, [""]), 0) : null
