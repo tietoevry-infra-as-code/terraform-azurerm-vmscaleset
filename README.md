@@ -4,8 +4,6 @@ Azure virtual machine scale sets let you create and manage a group of identical,
 
 This module deploys Windows or Linux virtual machine scale sets with Public / Private Load Balancer support and many other features.
 
-This module also generates SSH2 Key pair for Linux servers by default, however, it is only recommended to use for dev environment. For production environments, please generate your own SSH2 key with a passphrase and input the key by providing the path to the argument `admin_ssh_key_data`.
-
 These types of resources supported:
 
 * [Linux Virtual Machine Scale Set](https://www.terraform.io/docs/providers/azurerm/r/linux_virtual_machine_scale_set.html)
@@ -21,23 +19,17 @@ These types of resources supported:
 
 ```hcl
 module "vmscaleset" {
-  source = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v1.0.0"
+  source  = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
 
   # Resource Group and location, VNet and Subnet detials (Required)
-  resource_group_name  = "rg-hub-tieto-internal-shared-westeurope-001"
-  location             = "westeurope"
-  virtual_network_name = "vnet-tieto-internal-shared-dev-westeurope-01"
-  subnet_name          = "snet-management-shared-westeurope"
+  resource_group_name  = "rg-hub-demo-internal-shared-westeurope-001"
+  virtual_network_name = "vnet-default-hub-westeurope"
+  subnet_name          = "snet-management-default-hub-westeurope"
+  vmscaleset_name      = "testvmss"
 
   # (Optional) To enable Azure Monitoring and install log analytics agents
-  log_analytics_workspace_name = "logaws-zianu3vu-tieto-internal-shared-dev-westeurope"
-  hub_storage_account_name     = "stdiaglogstietointernal"
-
-  # (Required) Project_Name, Subscription_type and environment are must to create resource names.
-  # Project name length should be `15` and contian Alphanumerics and hyphens only.
-  project_name      = "tieto-internal"
-  subscription_type = "shared"
-  environment       = "dev"
+  log_analytics_workspace_name = var.log_analytics_workspace_id
+  hub_storage_account_name     = var.hub_storage_account_id
 
   # This module support multiple Pre-Defined Linux and Windows Distributions.
   # These distributions support the Automatic OS image upgrades in virtual machine scale sets
@@ -59,7 +51,7 @@ module "vmscaleset" {
   load_balancer_type              = "public"
   load_balancer_health_probe_port = 80
   load_balanced_port_list         = [80, 443]
-  additional_data_disks           = [200, 500]
+  additional_data_disks           = [100, 200]
 
   # Enable Auto scaling feature for VM scaleset by set argument to true.
   # Instances_count in VMSS will become default and minimum instance count.
@@ -91,7 +83,7 @@ module "vmscaleset" {
   # Adding TAG's to your Azure resources (Required)
   # ProjectName and Env are already declared above, to use them here, create a varible.
   tags = {
-    ProjectName  = "tieto-internal"
+    ProjectName  = "demo-internal"
     Env          = "dev"
     Owner        = "user@example.com"
     BusinessUnit = "CORP"
@@ -99,6 +91,14 @@ module "vmscaleset" {
   }
 }
 ```
+
+## Default Local Administrator and the Password
+
+This module utilizes __`azureadmin`__ as a local administrator on virtual machines. If you want to you use custom username, then specify the same by setting up the argument `admin_username` with valid user string.
+
+By default, this module generates a strong password for all virtual machines. If you want to set the custom password, specify the argument `admin_password` with valid string.
+
+This module also generates SSH2 Key pair for Linux servers by default, however, it is only recommended to use for dev environment. For production environments, please generate your own SSH2 key with a passphrase and input the key by providing the path to the argument `admin_ssh_key_data`.
 
 ## Pre-Defined Windows and Linux VM Images
 
@@ -116,8 +116,8 @@ Windows|`windows2012r2dc`, `windows2016dc`, `windows2019dc`, `windows2016dccore`
 If the pre-defined Windows or Linux variants are not sufficient then, you can specify the custom image by setting up the argument `custom_image` with appropriate values. Custom images can be used to bootstrap configurations such as preloading applications, application configurations, and other OS configurations. For more information [check here](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/tutorial-custom-images)
 
 ```hcl
-module "virtual-machine" {
-  source = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v1.0.0"
+module "vmscaleset" {
+  source  = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
 
   # .... omitted
 
@@ -228,8 +228,8 @@ In the Source and Destination columns, `VirtualNetwork`, `AzureLoadBalancer`, an
 *You cannot remove the default rules, but you can override them by creating rules with higher priorities.*
 
 ```hcl
-module "vnet-hub" {
-  source = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v1.0.0"
+module "vmscaleset" {
+  source  = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
 
   # .... omitted
   
@@ -287,8 +287,8 @@ End Date of the Project|Date when this application, workload, or service is plan
 > This module allows you to manage the above metadata tags directly or as an variable using `variables.tf`. All Azure resources which support tagging can be tagged by specifying key-values in argument `tags`. Tag `ResourceName` is added automatically to all resources.
 
 ```hcl
-module "vnet-hub" {
-  source = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v1.0.0"
+module "vmscaleset" {
+  source  = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
 
   # Resource Group, location, VNet and Subnet details
   resource_group_name  = "rg-hub-tieto-internal-shared-westeurope-001"
@@ -296,7 +296,7 @@ module "vnet-hub" {
   # ... omitted
 
   tags = {
-    ProjectName  = "tieto-internal"
+    ProjectName  = "demo-internal"
     Env          = "dev"
     Owner        = "user@example.com"
     BusinessUnit = "CORP"
@@ -304,6 +304,21 @@ module "vnet-hub" {
   }
 }
 ```
+
+## Requirements
+
+Name | Version
+-----|--------
+terraform | >= 0.13
+azurerm | ~> 2.27.0
+
+## Providers
+
+| Name | Version |
+|------|---------|
+azurerm | 2.27.0
+random | n/a
+tls | n/a
 
 ## Inputs
 
@@ -313,9 +328,7 @@ Name | Description | Type | Default
 `location`|The location of the resource group in which resources are created|string | `""`
 `virtual_network_name`|The name of the virtual network|string |`""`
 `subnet_name`|The name of the subnet to use in VM scale set|string |`""`
-`project_name`|The name of the project|string | `""`
-`subscription_type`|Summary description of the purpose of the subscription that contains the resource. Often broken down by deployment environment type or specific workloads. For example, Training, FINANCE, MARKETING, CORP, SHARED|string |`""`
-`environment`|The stage of the development lifecycle for the workload that the resource supports|list |`{}`
+`vmscaleset_name`|Specifies the name of the virtual machine scale set resource|string | `""`
 `log_analytics_workspace_name`|The name of log analytics workspace name|string | `""`
 `hub_storage_account_name`|The name of the hub storage account to store logs|string | `""`
 `load_balancer_sku`|The SKU of the Azure Load Balancer. Accepted values are `Basic` and `Standard`|string | `"Standard"`
@@ -344,6 +357,8 @@ Name | Description | Type | Default
 `generate_admin_ssh_key`|Generates a secure private key and encodes it as PEM|string|`true`
 `admin_ssh_key_data`|specify the path to the existing SSH key to authenticate Linux virtual machine|string|`""`
 `disable_password_authentication`|Should Password Authentication be disabled on this Virtual Machine. Applicable to Linux Virtual machine|string|`true`
+`admin_username`|The username of the local administrator used for the Virtual Machine|string|`"azureadmin"`
+`admin_password`|The Password which should be used for the local-administrator on the Virtual Machines|string|`null`
 `private_ip_address_allocation_type`|The allocation method used for the Private IP Address. Possible values are Dynamic and Static.|string|`false`
 `lb_private_ip_address`|The Static Private IP Address to assign to the Load Balancer. This is valid only when `private_ip_address_allocation` is set to `Static`.|string|`null`
 `enable_ip_forwarding`|Should IP Forwarding be enabled?|string|`false`
@@ -385,7 +400,7 @@ Name | Description | Type | Default
 
 ## Authors
 
-Module is maintained by [Kumaraswamy Vithanala](mailto:kumaraswamy.vithanala@tieto.com) with the help from other awesome contributors.
+Originally created by [Kumaraswamy Vithanala (Kumar)](mailto:kumaraswamy.vithanala@tieto.com)
 
 ## Other resources
 

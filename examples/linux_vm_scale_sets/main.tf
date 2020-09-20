@@ -1,21 +1,15 @@
 module "vmscaleset" {
-  source = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v1.0.0"
+  source = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
 
   # Resource Group and location, VNet and Subnet detials (Required)
-  resource_group_name  = "rg-hub-tieto-internal-shared-westeurope-001"
-  location             = "westeurope"
-  virtual_network_name = "vnet-tieto-internal-shared-dev-westeurope-01"
-  subnet_name          = "snet-management-shared-westeurope"
+  resource_group_name  = "rg-hub-demo-internal-shared-westeurope-001"
+  virtual_network_name = "vnet-default-hub-westeurope"
+  subnet_name          = "snet-management-default-hub-westeurope"
+  vmscaleset_name      = "testvmss"
 
   # (Optional) To enable Azure Monitoring and install log analytics agents
-  log_analytics_workspace_name = "logaws-zianu3vu-tieto-internal-shared-dev-westeurope"
-  hub_storage_account_name     = "stdiaglogstietointernal"
-
-  # (Required) Project_Name, Subscription_type and environment are must to create resource names.
-  # Project name length should be `15` and contian Alphanumerics and hyphens only. 
-  project_name      = "tieto-internal"
-  subscription_type = "shared"
-  environment       = "dev"
+  log_analytics_workspace_name = var.log_analytics_workspace_id
+  hub_storage_account_name     = var.hub_storage_account_id
 
   # This module support multiple Pre-Defined Linux and Windows Distributions.
   # These distributions support the Automatic OS image upgrades in virtual machine scale sets
@@ -23,11 +17,11 @@ module "vmscaleset" {
   # Windows Images: windows2012r2dc, windows2016dc, windows2019dc, windows2016dccore
   # Specify the RSA key for production workloads and set generate_admin_ssh_key argument to false
   # When you use Autoscaling feature, instances_count will become default and minimum instance count. 
-  os_flavor                 = "windows"
-  windows_distribution_name = "windows2019dc"
-  generate_admin_ssh_key    = false
-  admin_ssh_key_data        = "~/.ssh/id_rsa.pub"
-  instances_count           = 2
+  os_flavor               = "linux"
+  linux_distribution_name = "ubuntu1804"
+  generate_admin_ssh_key  = false
+  admin_ssh_key_data      = "~/.ssh/id_rsa.pub"
+  instances_count         = 2
 
   # Public and private load balancer support for VM scale sets
   # Specify health probe port to allow LB to detect the backend endpoint status
@@ -69,7 +63,7 @@ module "vmscaleset" {
   # Adding TAG's to your Azure resources (Required)
   # ProjectName and Env are already declared above, to use them here, create a varible. 
   tags = {
-    ProjectName  = "tieto-internal"
+    ProjectName  = "demo-internal"
     Env          = "dev"
     Owner        = "user@example.com"
     BusinessUnit = "CORP"

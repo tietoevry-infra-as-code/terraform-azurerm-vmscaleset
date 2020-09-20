@@ -48,7 +48,7 @@ data "azurerm_storage_account" "storeacc" {
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 resource "random_password" "passwd" {
-  count       = var.disable_password_authentication != true || var.os_flavor == "windows" ? 1 : 0
+  count       = var.disable_password_authentication != true || var.os_flavor == "windows" && var.admin_password == null ? 1 : 0
   length      = 24
   min_upper   = 4
   min_lower   = 2
@@ -65,13 +65,13 @@ resource "random_password" "passwd" {
 #-----------------------------------
 resource "azurerm_public_ip" "pip" {
   count               = var.enable_load_balancer == true && var.load_balancer_type == "public" ? 1 : 0
-  name                = lower("pip-vm-${var.project_name}-${var.location}-${var.environment}-0${count.index + 1}")
+  name                = lower("pip-vm-${var.vmscaleset_name}-${data.azurerm_resource_group.rg.location}-0${count.index + 1}")
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  domain_name_label   = format("vm-%s%s-pip-0${count.index + 1}", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")))
-  tags                = merge({ "ResourceName" = lower("pip-lbe-${var.project_name}-${var.location}") }, var.tags, )
+  domain_name_label   = format("vm%spip0${count.index + 1}", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")))
+  tags                = merge({ "ResourceName" = lower("pip-vm-${var.vmscaleset_name}-${data.azurerm_resource_group.rg.location}-0${count.index + 1}") }, var.tags, )
 }
 
 #---------------------------------------
@@ -79,14 +79,14 @@ resource "azurerm_public_ip" "pip" {
 #---------------------------------------
 resource "azurerm_lb" "vmsslb" {
   count               = var.enable_load_balancer ? 1 : 0
-  name                = var.load_balancer_type == "public" ? lower("lbext-${var.project_name}-${var.environment}-${var.location}") : lower("lbint-${var.project_name}-${var.environment}-${var.location}")
+  name                = var.load_balancer_type == "public" ? lower("lbext-${var.vmscaleset_name}-${data.azurerm_resource_group.rg.location}") : lower("lbint-${var.vmscaleset_name}-${data.azurerm_resource_group.rg.location}")
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
   sku                 = var.load_balancer_sku
-  tags                = merge({ "ResourceName" = var.load_balancer_type == "public" ? lower("lbext-${var.project_name}-${var.environment}-${var.location}") : lower("lbint-${var.project_name}-${var.environment}-${var.location}") }, var.tags, )
+  tags                = merge({ "ResourceName" = var.load_balancer_type == "public" ? lower("lbext-${var.vmscaleset_name}-${data.azurerm_resource_group.rg.location}") : lower("lbint-${var.vmscaleset_name}-${data.azurerm_resource_group.rg.location}") }, var.tags, )
 
   frontend_ip_configuration {
-    name                          = var.load_balancer_type == "public" ? lower("lbext-frontend-${var.project_name}-${var.environment}") : lower("lbint-frontend-${var.project_name}-${var.environment}")
+    name                          = var.load_balancer_type == "public" ? lower("lbext-frontend-${var.vmscaleset_name}") : lower("lbint-frontend-${var.vmscaleset_name}")
     public_ip_address_id          = var.enable_load_balancer == true && var.load_balancer_type == "public" ? azurerm_public_ip.pip[count.index].id : null
     private_ip_address_allocation = var.load_balancer_type == "private" ? var.private_ip_address_allocation : null
     private_ip_address            = var.load_balancer_type == "private" && var.private_ip_address_allocation == "Static" ? var.lb_private_ip_address : null
@@ -99,7 +99,7 @@ resource "azurerm_lb" "vmsslb" {
 #---------------------------------------
 resource "azurerm_lb_backend_address_pool" "bepool" {
   count               = var.enable_load_balancer ? 1 : 0
-  name                = lower("lbe-backend-pool-${var.project_name}-${var.environment}-${var.location}")
+  name                = lower("lbe-backend-pool-${var.vmscaleset_name}")
   resource_group_name = data.azurerm_resource_group.rg.name
   loadbalancer_id     = azurerm_lb.vmsslb[count.index].id
 }
@@ -109,7 +109,7 @@ resource "azurerm_lb_backend_address_pool" "bepool" {
 #---------------------------------------
 resource "azurerm_lb_nat_pool" "natpol" {
   count                          = var.enable_load_balancer && var.enable_lb_nat_pool ? 1 : 0
-  name                           = lower("lbe-nat-pool-${var.project_name}-${var.environment}-${var.location}")
+  name                           = lower("lbe-nat-pool-${var.vmscaleset_name}-${data.azurerm_resource_group.rg.location}")
   resource_group_name            = data.azurerm_resource_group.rg.name
   loadbalancer_id                = azurerm_lb.vmsslb.0.id
   protocol                       = "Tcp"
@@ -124,7 +124,7 @@ resource "azurerm_lb_nat_pool" "natpol" {
 #---------------------------------------
 resource "azurerm_lb_probe" "lbp" {
   count               = var.enable_load_balancer ? 1 : 0
-  name                = lower("lb-probe-port-${var.load_balancer_health_probe_port}-${var.project_name}-${var.environment}")
+  name                = lower("lb-probe-port-${var.load_balancer_health_probe_port}-${var.vmscaleset_name}")
   resource_group_name = data.azurerm_resource_group.rg.name
   loadbalancer_id     = azurerm_lb.vmsslb[count.index].id
   port                = var.load_balancer_health_probe_port
@@ -135,7 +135,7 @@ resource "azurerm_lb_probe" "lbp" {
 #--------------------------
 resource "azurerm_lb_rule" "lbrule" {
   count                          = var.enable_load_balancer ? length(var.load_balanced_port_list) : 0
-  name                           = format("%s-%02d-rule", var.project_name, count.index + 1)
+  name                           = format("%s-%02d-rule", var.vmscaleset_name, count.index + 1)
   resource_group_name            = data.azurerm_resource_group.rg.name
   loadbalancer_id                = azurerm_lb.vmsslb[0].id
   probe_id                       = azurerm_lb_probe.lbp[0].id
@@ -150,10 +150,10 @@ resource "azurerm_lb_rule" "lbrule" {
 # Network security group for Virtual Machine Network Interface
 #---------------------------------------------------------------
 resource "azurerm_network_security_group" "nsg" {
-  name                = lower("nsg_${var.project_name}_${var.environment}_${var.location}_in")
+  name                = lower("nsg_${var.vmscaleset_name}_${data.azurerm_resource_group.rg.location}_in")
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
-  tags                = merge({ "ResourceName" = lower("nsg_${var.project_name}_${var.environment}_${var.location}_in") }, var.tags, )
+  tags                = merge({ "ResourceName" = lower("nsg_${var.vmscaleset_name}_${data.azurerm_resource_group.rg.location}_in") }, var.tags, )
 }
 
 resource "azurerm_network_security_rule" "nsg_rule" {
@@ -178,7 +178,7 @@ resource "azurerm_network_security_rule" "nsg_rule" {
 #---------------------------------------
 resource "azurerm_linux_virtual_machine_scale_set" "linux_vmss" {
   count                           = var.os_flavor == "linux" ? 1 : 0
-  name                            = format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), count.index + 1)
+  name                            = format("vm%s%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")), count.index + 1)
   resource_group_name             = data.azurerm_resource_group.rg.name
   location                        = data.azurerm_resource_group.rg.location
   overprovision                   = var.overprovision
@@ -187,9 +187,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vmss" {
   zones                           = var.availability_zones
   zone_balance                    = var.availability_zone_balance
   single_placement_group          = var.single_placement_group
-  admin_username                  = "tietoadmin"
-  admin_password                  = var.disable_password_authentication != true ? random_password.passwd[count.index].result : null
-  tags                            = merge({ "ResourceName" = format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), count.index + 1) }, var.tags, )
+  admin_username                  = var.admin_username
+  admin_password                  = var.disable_password_authentication != true && var.admin_password == null ? random_password.passwd[count.index].result : var.admin_password
+  tags                            = merge({ "ResourceName" = format("vm%s%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")), count.index + 1) }, var.tags, )
   source_image_id                 = var.source_image_id != null ? var.source_image_id : null
   upgrade_mode                    = var.os_upgrade_mode
   health_probe_id                 = var.enable_load_balancer ? azurerm_lb_probe.lbp[0].id : null
@@ -197,7 +197,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vmss" {
   disable_password_authentication = var.disable_password_authentication
 
   admin_ssh_key {
-    username   = "tietoadmin"
+    username   = var.admin_username
     public_key = var.generate_admin_ssh_key == true && var.os_flavor == "linux" ? tls_private_key.rsa[0].public_key_openssh : file(var.admin_ssh_key_data)
   }
 
@@ -227,7 +227,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vmss" {
   }
 
   network_interface {
-    name                          = lower("nic-${format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), count.index + 1)}")
+    name                          = lower("nic-${format("vm%s%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
     primary                       = true
     dns_servers                   = var.dns_servers
     enable_ip_forwarding          = var.enable_ip_forwarding
@@ -235,7 +235,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vmss" {
     network_security_group_id     = azurerm_network_security_group.nsg.id
 
     ip_configuration {
-      name                                   = lower("ipconig-${format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), count.index + 1)}")
+      name                                   = lower("ipconig-${format("vm%s%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
       primary                                = true
       subnet_id                              = data.azurerm_subnet.snet.id
       load_balancer_backend_address_pool_ids = var.enable_load_balancer ? [azurerm_lb_backend_address_pool.bepool[0].id] : null
@@ -244,8 +244,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vmss" {
       dynamic "public_ip_address" {
         for_each = var.assign_public_ip_to_each_vm_in_vmss ? [{}] : []
         content {
-          name              = lower("pip-${format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), "0${count.index + 1}")}")
-          domain_name_label = format("vm-%s%s-pip0${count.index + 1}", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")))
+          name              = lower("pip-${format("vm%s%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")), "0${count.index + 1}")}")
+          domain_name_label = format("vm-%s-pip0${count.index + 1}", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")))
         }
       }
     }
@@ -277,8 +277,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vmss" {
 #---------------------------------------
 resource "azurerm_windows_virtual_machine_scale_set" "winsrv_vmss" {
   count                  = var.os_flavor == "windows" ? 1 : 0
-  name                   = format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), count.index + 1)
-  computer_name_prefix   = format("%s-vmss", "win") # not more than 9 characters
+  name                   = format("%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")))
+  computer_name_prefix   = format("%s%s", lower(replace(var.vm_computer_name, "/[[:^alnum:]]/", "")), count.index + 1)
   resource_group_name    = data.azurerm_resource_group.rg.name
   location               = data.azurerm_resource_group.rg.location
   overprovision          = var.overprovision
@@ -287,9 +287,9 @@ resource "azurerm_windows_virtual_machine_scale_set" "winsrv_vmss" {
   zones                  = var.availability_zones
   zone_balance           = var.availability_zone_balance
   single_placement_group = var.single_placement_group
-  admin_username         = "tietoadmin"
-  admin_password         = random_password.passwd[count.index].result
-  tags                   = merge({ "ResourceName" = format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), count.index + 1) }, var.tags, )
+  admin_username         = var.admin_username
+  admin_password         = var.admin_password == null ? random_password.passwd[count.index].result : var.admin_password
+  tags                   = merge({ "ResourceName" = format("%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", ""))) }, var.tags, )
   source_image_id        = var.source_image_id != null ? var.source_image_id : null
   upgrade_mode           = var.os_upgrade_mode
   health_probe_id        = var.enable_load_balancer ? azurerm_lb_probe.lbp[0].id : null
@@ -322,7 +322,7 @@ resource "azurerm_windows_virtual_machine_scale_set" "winsrv_vmss" {
   }
 
   network_interface {
-    name                          = lower("nic-${format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), count.index + 1)}")
+    name                          = lower("nic-${format("vm%s%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
     primary                       = true
     dns_servers                   = var.dns_servers
     enable_ip_forwarding          = var.enable_ip_forwarding
@@ -330,7 +330,7 @@ resource "azurerm_windows_virtual_machine_scale_set" "winsrv_vmss" {
     network_security_group_id     = azurerm_network_security_group.nsg.id
 
     ip_configuration {
-      name                                   = lower("ipconig-${format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), count.index + 1)}")
+      name                                   = lower("ipconig-${format("vm%s%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
       primary                                = true
       subnet_id                              = data.azurerm_subnet.snet.id
       load_balancer_backend_address_pool_ids = var.enable_load_balancer ? [azurerm_lb_backend_address_pool.bepool[0].id] : null
@@ -339,8 +339,8 @@ resource "azurerm_windows_virtual_machine_scale_set" "winsrv_vmss" {
       dynamic "public_ip_address" {
         for_each = var.assign_public_ip_to_each_vm_in_vmss ? [{}] : []
         content {
-          name              = lower("pip-${format("vm%s%s%s", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")), count.index + 1)}")
-          domain_name_label = format("vm-%s%s-pip0${count.index + 1}", lower(replace(var.project_name, "/[[:^alnum:]]/", "")), lower(replace(var.environment, "/[[:^alnum:]]/", "")))
+          name              = lower("pip-${format("vm%s%s", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")), count.index + 1)}")
+          domain_name_label = format("vm-%s%s-pip0${count.index + 1}", lower(replace(var.vmscaleset_name, "/[[:^alnum:]]/", "")))
         }
       }
     }
@@ -372,7 +372,7 @@ resource "azurerm_windows_virtual_machine_scale_set" "winsrv_vmss" {
 #-----------------------------------------------
 resource "azurerm_monitor_autoscale_setting" "auto" {
   count               = var.enable_autoscale_for_vmss ? 1 : 0
-  name                = lower("auto-scale-set-${var.project_name}-${var.environment}")
+  name                = lower("auto-scale-set-${var.vmscaleset_name}")
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
   target_resource_id  = var.os_flavor == "windows" ? azurerm_windows_virtual_machine_scale_set.winsrv_vmss.0.id : azurerm_linux_virtual_machine_scale_set.linux_vmss.0.id
@@ -425,10 +425,10 @@ resource "azurerm_monitor_autoscale_setting" "auto" {
   }
 }
 
-#--------------------------------------------------
-# Azure Log Analytics Workspace Agent Installation 
-#--------------------------------------------------
-resource "azurerm_virtual_machine_scale_set_extension" "omsagent" {
+#--------------------------------------------------------------
+# Azure Log Analytics Workspace Agent Installation for windows
+#--------------------------------------------------------------
+resource "azurerm_virtual_machine_scale_set_extension" "omsagentwin" {
   count                        = var.log_analytics_workspace_name != null && var.os_flavor == "windows" ? 1 : 0
   name                         = "OmsAgentForWindows"
   publisher                    = "Microsoft.EnterpriseCloud.Monitoring"
@@ -450,12 +450,37 @@ resource "azurerm_virtual_machine_scale_set_extension" "omsagent" {
   PROTECTED_SETTINGS
 }
 
+#--------------------------------------------------------------
+# Azure Log Analytics Workspace Agent Installation for Linux
+#--------------------------------------------------------------
+resource "azurerm_virtual_machine_scale_set_extension" "omsagentlinux" {
+  count                        = var.log_analytics_workspace_name != null && var.os_flavor == "linux" ? 1 : 0
+  name                         = "OmsAgentForLinux"
+  publisher                    = "Microsoft.EnterpriseCloud.Monitoring"
+  type                         = "OmsAgentForLinux"
+  type_handler_version         = "1.13"
+  auto_upgrade_minor_version   = true
+  virtual_machine_scale_set_id = azurerm_linux_virtual_machine_scale_set.linux_vmss.0.id
+
+  settings = <<SETTINGS
+    {
+      "workspaceId": "${data.azurerm_log_analytics_workspace.logws.0.workspace_id}"
+    }
+  SETTINGS
+
+  protected_settings = <<PROTECTED_SETTINGS
+    {
+    "workspaceKey": "${data.azurerm_log_analytics_workspace.logws.0.primary_shared_key}"
+    }
+  PROTECTED_SETTINGS
+}
+
 #--------------------------------------
 # azurerm monitoring diagnostics 
 #--------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "vmmsdiag" {
   count                      = var.log_analytics_workspace_name != null && var.hub_storage_account_name != null ? 1 : 0
-  name                       = lower("${var.project_name}-${var.environment}-diag")
+  name                       = lower("${var.vmscaleset_name}-diag")
   target_resource_id         = var.os_flavor == "windows" ? azurerm_windows_virtual_machine_scale_set.winsrv_vmss.0.id : azurerm_linux_virtual_machine_scale_set.linux_vmss.0.id
   storage_account_id         = data.azurerm_storage_account.storeacc.0.id
   log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
@@ -471,7 +496,7 @@ resource "azurerm_monitor_diagnostic_setting" "vmmsdiag" {
 
 resource "azurerm_monitor_diagnostic_setting" "nsg" {
   count                      = var.log_analytics_workspace_name != null && var.hub_storage_account_name != null ? 1 : 0
-  name                       = lower("nsg-${var.project_name}-${var.environment}-diag")
+  name                       = lower("nsg-${var.vmscaleset_name}-diag")
   target_resource_id         = azurerm_network_security_group.nsg.id
   storage_account_id         = data.azurerm_storage_account.storeacc.0.id
   log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id
@@ -491,7 +516,7 @@ resource "azurerm_monitor_diagnostic_setting" "nsg" {
 
 resource "azurerm_monitor_diagnostic_setting" "lb-pip" {
   count                      = var.load_balancer_type == "public" && var.log_analytics_workspace_name != null && var.hub_storage_account_name != null ? 1 : 0
-  name                       = "${var.project_name}-${var.environment}-pip-diag"
+  name                       = "${var.vmscaleset_name}-pip-diag"
   target_resource_id         = azurerm_public_ip.pip.0.id
   storage_account_id         = data.azurerm_storage_account.storeacc.0.id
   log_analytics_workspace_id = data.azurerm_log_analytics_workspace.logws.0.id

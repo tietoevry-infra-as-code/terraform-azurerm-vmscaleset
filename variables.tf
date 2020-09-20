@@ -3,11 +3,6 @@ variable "resource_group_name" {
   default     = ""
 }
 
-variable "location" {
-  description = "The location/region to keep all your network resources. To get the list of all locations with table format from azure cli, run 'az account list-locations -o table'"
-  default     = ""
-}
-
 variable "virtual_network_name" {
   description = "The name of the virtual network"
   default     = ""
@@ -18,18 +13,13 @@ variable "subnet_name" {
   default     = ""
 }
 
-variable "project_name" {
-  description = "The name of the project."
+variable "vmscaleset_name" {
+  description = "Specifies the name of the virtual machine scale set resource"
   default     = ""
 }
 
-variable "subscription_type" {
-  description = "Summary description of the purpose of the subscription that contains the resource. Often broken down by deployment environment type or specific workloads"
-  default     = ""
-}
-
-variable "environment" {
-  description = "The stage of the development lifecycle for the workload that the resource supports"
+variable "vm_computer_name" {
+  description = "Specifies the name of the virtual machine inside the VM scale set"
   default     = ""
 }
 
@@ -275,6 +265,16 @@ variable "admin_ssh_key_data" {
 variable "disable_password_authentication" {
   description = "Should Password Authentication be disabled on this Virtual Machine Scale Set? Defaults to true."
   default     = true
+}
+
+variable "admin_username" {
+  description = "The username of the local administrator used for the Virtual Machine."
+  default     = "azureadmin"
+}
+
+variable "admin_password" {
+  description = "The Password which should be used for the local-administrator on this Virtual Machine"
+  default     = null
 }
 
 variable "private_ip_address_allocation" {
