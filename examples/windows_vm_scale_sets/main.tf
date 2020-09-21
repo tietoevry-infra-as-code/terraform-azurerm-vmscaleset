@@ -1,5 +1,6 @@
 module "vmscaleset" {
-  source = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
+  source  = "kumarvna/vm-scale-sets/azurerm"
+  version = "2.0.0"
 
   # Resource Group and location, VNet and Subnet detials (Required)
   resource_group_name  = "rg-demo-westeurope-01" #"rg-hub-demo-internal-shared-westeurope-001"

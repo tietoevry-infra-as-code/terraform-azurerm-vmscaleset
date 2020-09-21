@@ -19,7 +19,8 @@ These types of resources supported:
 
 ```hcl
 module "vmscaleset" {
-  source  = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
+  source  = "kumarvna/vm-scale-sets/azurerm"
+  version = "2.0.0"
 
   # Resource Group and location, VNet and Subnet detials (Required)
   resource_group_name  = "rg-hub-demo-internal-shared-westeurope-001"
@@ -117,7 +118,8 @@ If the pre-defined Windows or Linux variants are not sufficient then, you can sp
 
 ```hcl
 module "vmscaleset" {
-  source  = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
+  source  = "kumarvna/vm-scale-sets/azurerm"
+  version = "2.0.0"
 
   # .... omitted
 
@@ -229,7 +231,8 @@ In the Source and Destination columns, `VirtualNetwork`, `AzureLoadBalancer`, an
 
 ```hcl
 module "vmscaleset" {
-  source  = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
+  source  = "kumarvna/vm-scale-sets/azurerm"
+  version = "2.0.0"
 
   # .... omitted
   
@@ -288,7 +291,8 @@ End Date of the Project|Date when this application, workload, or service is plan
 
 ```hcl
 module "vmscaleset" {
-  source  = "github.com/tietoevry-infra-as-code/terraform-azurerm-vmscaleset?ref=v2.0.0"
+  source  = "kumarvna/vm-scale-sets/azurerm"
+  version = "2.0.0"
 
   # Resource Group, location, VNet and Subnet details
   resource_group_name  = "rg-hub-tieto-internal-shared-westeurope-001"
@@ -400,7 +404,7 @@ Name | Description | Type | Default
 
 ## Authors
 
-Originally created by [Kumaraswamy Vithanala (Kumar)](mailto:kumaraswamy.vithanala@tieto.com)
+Originally created by [Kumaraswamy Vithanala](mailto:kumaraswamy.vithanala@tieto.com)
 
 ## Other resources
 
